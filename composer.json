@@ -1,0 +1,25 @@
+{
+    "name": "irfantoor/filesystem",
+    "description": "Irfan's Filesystem",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Irfan TOOR",
+            "email": "email@irfantoor.com"
+        }
+    ],
+    "require": {
+    },
+    "require-dev": {
+        "irfantoor/test": "^0.4.3"
+    },
+    "autoload": {
+        "classmap": [
+            "src/"
+        ],
+        "psr-4": {
+            "IrfanTOOR\\": "src"
+        }
+    }
+}
