@@ -34,21 +34,21 @@ class Filesystem
      *
      * @var const
      */
-    public const NAME = "Irfan's Filesystem";
+    const NAME = "Irfan's Filesystem";
 
     /**
      * Description
      *
      * @var const
      */    
-    public const DESCRIPTION = "Irfan's Filesystem";
+    const DESCRIPTION = "Irfan's Filesystem";
 
     /**
      * Version
      *
      * @var const
      */    
-    public const VERSION = "0.1";
+    const VERSION = "0.2";
 
     /**
      * Root path
@@ -70,16 +70,6 @@ class Filesystem
         if (!is_dir($this->root)) {
             throw new Exception("root dir: {$this->root}, does not exist", 1);
         }
-    }
-
-    /**
-     * Returns the current version of the package
-     *
-     * @return string git version of this package
-     */
-    function getVersion()
-    {
-        return self::VERSION;
     }
 
     /**

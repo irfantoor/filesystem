@@ -32,14 +32,14 @@ class FilesystemTest extends Test
     function testGetVersion()
     {
         $fs = $this->getFilesystem();
-        $version = $fs->getVersion();
+        $version = $fs::VERSION;
 
         $c = new \IrfanTOOR\Console();
         $c->write('(' . $version . ') ', 'dark');
 
         $this->assertString($version);
         $this->assertFalse(strpos($version, 'VERSION'));
-        $this->assertEquals($fs::VERSION, $version);
+        $this->assertEquals($fs::VERSION, Filesystem::VERSION);
     }
 
     function testHas()
