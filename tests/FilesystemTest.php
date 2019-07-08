@@ -29,7 +29,7 @@ class FilesystemTest extends Test
         $this->assertInstanceOf(IrfanTOOR\Filesystem::class, $fs);
     }
 
-    function testGetVersion()
+    function testVersion()
     {
         $fs = $this->getFilesystem();
         $version = $fs::VERSION;

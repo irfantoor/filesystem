@@ -10,9 +10,10 @@
         }
     ],
     "require": {
+        "php": ">= 7.3"
     },
     "require-dev": {
-        "irfantoor/test": "^0.5.1"
+        "irfantoor/test": "^0.6.1"
     },
     "autoload": {
         "classmap": [
