@@ -1,13 +1,11 @@
 <?php
+
 /**
- * Irfan's Filesystem
- * php version 7.0
+ * IrfanTOOR\Filesystem
+ * php version 7.3
  *
- * @category Filesystem
- * @package  IrfanTOOR_Filesystem
- * @author   Irfan TOOR <email@irfantoor.com>
- * @license  https://github.com/irfantoor/filesystem/blob/master/LICENSE (MIT)
- * @link     https://github.com/irfantoor/filesystem/blob/master/src/Filesystem.php
+ * @author    Irfan TOOR <email@irfantoor.com>
+ * @copyright 2021 Irfan TOOR
  */
 
 namespace IrfanTOOR;
@@ -17,38 +15,13 @@ use Exception;
 use FilesystemIterator;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
+use Throwable;
 
-/**
- * IrfanTOOR\Filesystem
- *
- * @category Classes
- * @package  IrfanTOOR_Filesystem
- * @author   Irfan TOOR <email@irfantoor.com>
- * @license  https://github.com/irfantoor/filesystem/blob/master/LICENSE (MIT)
- * @link     https://github.com/irfantoor/filesystem/blob/master/src/Filesystem.php
- */
 class Filesystem
 {
-    /**
-     * Name
-     *
-     * @var const
-     */
-    const NAME = "Irfan's Filesystem";
-
-    /**
-     * Description
-     *
-     * @var const
-     */    
-    const DESCRIPTION = "Irfan's Filesystem";
-
-    /**
-     * Version
-     *
-     * @var const
-     */    
-    const VERSION = "0.3";
+    const NAME        = "Irfan's Filesystem";
+    const DESCRIPTION = "A bare minimum filesystem to manipulate local directories and files";
+    const VERSION     = "0.3.1";
 
     /**
      * Root path
@@ -255,7 +228,11 @@ class Filesystem
         $dir = $this->normalise($dir);
 
         if (!$recursive) {
-            return mkdir($this->root . $dir);
+            if ($dir && !is_dir($this->root . $dir)) {
+                return mkdir($this->root . $dir);
+            }
+
+            return false;
         } else {
             $d = explode('/', $dir);
             $dd = '';
@@ -282,14 +259,16 @@ class Filesystem
     function removeDir($dir, $force = false)
     {
         $dir = $this->normalise($dir);
+        $list = $this->listDir($dir, true);
 
         if (!$force) {
             if ($dir !== '') {
+                if (count($list) > 0)
+                    return false;
+
                 return rmdir($this->root . $dir);
             }
         } else {
-            $list = $this->listDir($dir, true);
-            
             foreach($list as $item) {
                 if ('file' === $item['type']) {
                     $this->remove($item['pathname']);

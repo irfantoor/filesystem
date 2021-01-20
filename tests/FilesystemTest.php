@@ -34,9 +34,6 @@ class FilesystemTest extends Test
         $fs = $this->getFilesystem();
         $version = $fs::VERSION;
 
-        $c = new \IrfanTOOR\Console();
-        $c->write('(' . $version . ') ', 'dark');
-
         $this->assertString($version);
         $this->assertFalse(strpos($version, 'VERSION'));
         $this->assertEquals($fs::VERSION, Filesystem::VERSION);
@@ -63,18 +60,20 @@ class FilesystemTest extends Test
     {
         $fs = $this->getFilesystem();
 
-        $this->assertException(
-            function() use($fs){
-                $fs->write('file.txt', 'something else');
-            },
-            Exception::class,
-            'file: file.txt, already exists'
-        );
-
         $this->assertNotZero($fs->write('file1.txt', 'something'));
         $this->assertEquals('something', $fs->read('file1.txt'));
         $this->assertNotZero($fs->write('file1.txt', 'something else', true));
         $this->assertEquals('something else', $fs->read('file1.txt'));
+    }
+
+    /**
+     * throws: Exception::class
+     * message: file: file.txt, already exists
+     */
+    function testWriteException()
+    {
+        $fs = $this->getFilesystem();
+        $fs->write('file.txt', 'something else');
     }
 
     function testRename()
@@ -91,24 +90,30 @@ class FilesystemTest extends Test
         $this->assertTrue($fs->has('file2.txt'));
         $this->assertEquals($contents, $fs->read('file2.txt'));
 
-        $this->assertTrue($fs->has('file.txt'));
-        $this->assertException(
-            function() use($fs){
-                $fs->rename('file.txt', 'file2.txt');
-            },
-            Exception::class,
-            'target: file2.txt, already exists'
-        );
-
         $this->assertFalse($fs->has('file1.txt'));
         $this->assertFalse($fs->has('file3.txt'));
-        $this->assertException(
-            function() use($fs) {
-                $fs->rename('file1.txt', 'file3.txt');
-            },
-            Exception::class,
-            'source: file1.txt, does not exist'
-        );
+    }
+
+    /**
+     * throws: Exception::class
+     * message: source: file1.txt, does not exist
+     */
+    function testRenameSourceException()
+    {
+        $fs = $this->getFilesystem();
+        $fs->rename('file1.txt', 'file3.txt');
+    }
+
+    /**
+     * throws: Exception::class
+     * message: target: file2.txt, already exists
+     */
+    function testRenameTargetException()
+    {
+        $fs = $this->getFilesystem();
+
+        $this->assertTrue($fs->has('file.txt'));
+        $fs->rename('file.txt', 'file2.txt');
     }
 
     function testCopy()
@@ -124,24 +129,28 @@ class FilesystemTest extends Test
         $this->assertTrue($fs->has('file.txt'));
         $this->assertTrue($fs->has('file1.txt'));
         $this->assertEquals($contents, $fs->read('file1.txt'));
-
-        $this->assertException(
-            function() use($fs) {
-                $fs->copy('file.txt', 'file1.txt');
-            },
-            Exception::class,
-            'target: file1.txt, already exists'
-        );
-
         $this->assertFalse($fs->has('file3.txt'));
         $this->assertFalse($fs->has('file4.txt'));
-        $this->assertException(
-            function() use($fs) {
-                $fs->rename('file3.txt', 'file4.txt');
-            },
-            Exception::class,
-            'source: file3.txt, does not exist'
-        );
+    }
+
+    /**
+     * throws: Exception::class
+     * message: source: file3.txt, does not exist
+     */
+    function testCopySourceException()
+    {
+        $fs = $this->getFilesystem();
+        $fs->rename('file3.txt', 'file4.txt');
+    }
+
+    /**
+     * throws: Exception::class
+     * message: target: file1.txt, already exists
+     */
+    function testCopyTargetException()
+    {
+        $fs = $this->getFilesystem();
+        $fs->copy('file.txt', 'file1.txt');
     }
 
     function testCopyForce()
@@ -164,13 +173,16 @@ class FilesystemTest extends Test
 
         $this->assertFalse($fs->has('file4.txt'));
         $this->assertFalse($fs->has('file5.txt'));
-        $this->assertException(
-            function() use($fs) {
-                $fs->copy('file4.txt', 'file5.txt', true);
-            },
-            Exception::class,
-            'source: file4.txt, does not exist'
-        );
+    }
+
+    /**
+     * throws: Exception::class
+     * message: source: file4.txt, does not exist
+     */
+    function testCopyForceEception()
+    {
+        $fs = $this->getFilesystem();
+        $fs->copy('file4.txt', 'file5.txt', true);
     }
 
     function testRemove()
@@ -324,8 +336,9 @@ class FilesystemTest extends Test
         $this->assertNotZero($l2);
         $this->assertEquals(count($l1) + count($l2), count($list));
 
-        $l = sort(array_merge($l1, $l2));
-        $this->assertEquals($l, sort($list));
+        $l = array_merge($l1, $l2);
+        $ll = sort($l);
+        $this->assertEquals($ll, sort($list));
     }
 
     function testRemoveDirRecusrsive()
@@ -366,17 +379,14 @@ class FilesystemTest extends Test
         $this->assertTrue($fs->hasDir('/'));
     }
 
+    /**
+     * throws: Exception::class
+     */
     function testRootMustExist()
     {
         # finally remove the temporary root
-        rmdir(__DIR__ . '/tmp');
-
-        $this->assertException(
-            function() {
-                $fs = new Filesystem(__DIR__ . '/tmp');
-            },
-            Exception::class,
-            'root dir: ' . __DIR__ . '/tmp/, does not exist'
-        );
+        $tmp_path = __DIR__ . '/tmp';
+        rmdir($tmp_path);
+        $fs = new Filesystem($tmp_path);
     }
 }
