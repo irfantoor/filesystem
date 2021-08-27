@@ -1,9 +1,9 @@
 {
     "name": "irfantoor/filesystem",
-    "description": "A bare minimum filesystem to manipulate local directories and files",
+    "description": "Irfan's Filesystem : A single-file minimum filesystem class, to manage the files and directories.",
     "keywords": [
         "filesystem", "local", "directories", "files",
-        "create", "copy", "rename", "remove"
+        "create", "copy", "rename", "remove", "single-file"
     ],
     "type": "library",
     "license": "MIT",
