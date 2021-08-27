@@ -1,56 +1,56 @@
 <?php
 
-use IrfanTOOR\Filesystem;
+use IrfanTOOR\FileSystem;
 use IrfanTOOR\Test;
 
-class FilesystemTest extends Test
+class FileSystemTest extends Test
 {
     protected $fs;
 
-    function getFilesystem()
+    function getFileSystem()
     {
         if (!$this->fs) {
             $root = __DIR__ . '/' . 'tmp';
-            
+
             if (is_dir($root)) {
                 system("rm -r $root");
             }
 
             mkdir($root);
-            $this->fs = new Filesystem($root);
+            $this->fs = new FileSystem($root);
         }
 
         return $this->fs;
-    } 
+    }
 
     function testInstance()
     {
-        $fs = $this->getFilesystem();
-        $this->assertInstanceOf(IrfanTOOR\Filesystem::class, $fs);
+        $fs = $this->getFileSystem();
+        $this->assertInstanceOf(IrfanTOOR\FileSystem::class, $fs);
     }
 
     function testVersion()
     {
-        $fs = $this->getFilesystem();
+        $fs = $this->getFileSystem();
         $version = $fs::VERSION;
 
         $this->assertString($version);
         $this->assertFalse(strpos($version, 'VERSION'));
-        $this->assertEquals($fs::VERSION, Filesystem::VERSION);
+        $this->assertEquals($fs::VERSION, FileSystem::VERSION);
     }
 
     function testHas()
     {
-        $fs = $this->getFilesystem();
+        $fs = $this->getFileSystem();
         $this->assertFalse($fs->has('file.txt'));
-        
+
         $this->assertEquals(12, $fs->write('file.txt', 'Hello World!'));
         $this->assertTrue($fs->has('file.txt'));
     }
 
     function testRead()
     {
-        $fs = $this->getFilesystem();
+        $fs = $this->getFileSystem();
         $this->assertEquals('Hello World!', $fs->read('file.txt'));
         $this->assertFalse($fs->has('file1.txt'));
         $this->assertFalse($fs->read('file1.txt'));
@@ -58,7 +58,7 @@ class FilesystemTest extends Test
 
     function testWrite()
     {
-        $fs = $this->getFilesystem();
+        $fs = $this->getFileSystem();
 
         $this->assertNotZero($fs->write('file1.txt', 'something'));
         $this->assertEquals('something', $fs->read('file1.txt'));
@@ -72,14 +72,14 @@ class FilesystemTest extends Test
      */
     function testWriteException()
     {
-        $fs = $this->getFilesystem();
+        $fs = $this->getFileSystem();
         $fs->write('file.txt', 'something else');
     }
 
     function testRename()
     {
-        $fs = $this->getFilesystem();
-        
+        $fs = $this->getFileSystem();
+
         $this->assertTrue($fs->has('file1.txt'));
         $this->assertFalse($fs->has('file2.txt'));
 
@@ -100,7 +100,7 @@ class FilesystemTest extends Test
      */
     function testRenameSourceException()
     {
-        $fs = $this->getFilesystem();
+        $fs = $this->getFileSystem();
         $fs->rename('file1.txt', 'file3.txt');
     }
 
@@ -110,7 +110,7 @@ class FilesystemTest extends Test
      */
     function testRenameTargetException()
     {
-        $fs = $this->getFilesystem();
+        $fs = $this->getFileSystem();
 
         $this->assertTrue($fs->has('file.txt'));
         $fs->rename('file.txt', 'file2.txt');
@@ -118,8 +118,8 @@ class FilesystemTest extends Test
 
     function testCopy()
     {
-        $fs = $this->getFilesystem();
-        
+        $fs = $this->getFileSystem();
+
         $this->assertTrue($fs->has('file.txt'));
         $this->assertFalse($fs->has('file1.txt'));
 
@@ -139,7 +139,7 @@ class FilesystemTest extends Test
      */
     function testCopySourceException()
     {
-        $fs = $this->getFilesystem();
+        $fs = $this->getFileSystem();
         $fs->rename('file3.txt', 'file4.txt');
     }
 
@@ -149,14 +149,14 @@ class FilesystemTest extends Test
      */
     function testCopyTargetException()
     {
-        $fs = $this->getFilesystem();
+        $fs = $this->getFileSystem();
         $fs->copy('file.txt', 'file1.txt');
     }
 
     function testCopyForce()
     {
-        $fs = $this->getFilesystem();
-        
+        $fs = $this->getFileSystem();
+
         $this->assertTrue($fs->has('file.txt'));
         $this->assertTrue($fs->has('file1.txt'));
 
@@ -181,14 +181,14 @@ class FilesystemTest extends Test
      */
     function testCopyForceEception()
     {
-        $fs = $this->getFilesystem();
+        $fs = $this->getFileSystem();
         $fs->copy('file4.txt', 'file5.txt', true);
     }
 
     function testRemove()
     {
-        $fs = $this->getFilesystem();
-        
+        $fs = $this->getFileSystem();
+
         $this->assertTrue($fs->has('file.txt'));
         $this->assertTrue($fs->remove('file.txt'));
         $this->assertFalse($fs->has('file.txt'));
@@ -197,17 +197,17 @@ class FilesystemTest extends Test
 
     function testHasDir()
     {
-        $fs = $this->getFilesystem();
+        $fs = $this->getFileSystem();
         $this->assertFalse($fs->hasDir('abc'));
         $this->assertFalse($fs->hasDir('file1.txt'));
-        
+
         $fs->createDir('abc');
         $this->assertTrue($fs->hasDir('abc'));
     }
 
     function testCreateDir()
     {
-        $fs = $this->getFilesystem();
+        $fs = $this->getFileSystem();
 
         $this->assertFalse($fs->createDir('abc'));
         $this->assertFalse($fs->hasDir('abc/def'));
@@ -217,7 +217,7 @@ class FilesystemTest extends Test
 
     function testRemoveDir()
     {
-        $fs = $this->getFilesystem();
+        $fs = $this->getFileSystem();
 
         $this->assertTrue($fs->hasDir('abc/def'));
         $this->assertFalse($fs->removeDir('abc'));
@@ -225,12 +225,12 @@ class FilesystemTest extends Test
         $this->assertTrue($fs->removeDir('abc/def'));
         $this->assertFalse($fs->hasDir('abc/def'));
         $this->assertTrue($fs->removeDir('abc'));
-        $this->assertFalse($fs->hasDir('abc'));  
+        $this->assertFalse($fs->hasDir('abc'));
     }
 
     function testListDir()
     {
-        $fs = $this->getFilesystem();
+        $fs = $this->getFileSystem();
 
         $this->assertFalse($fs->listDir('abc'));
         $fs->createDir('abc');
@@ -239,17 +239,17 @@ class FilesystemTest extends Test
 
         foreach ($fs->listDir('.') as $item) {
             $this->assertEquals($item['basename'], $item['pathname']);
-            
+
             if ($item['basename'] == 'abc') {
                 $this->assertEquals('', $item['ext']);
                 $this->assertEquals('dir', $item['type']);
-                $this->assertEquals(7, $item['mode']);                
+                $this->assertEquals(7, $item['mode']);
             } else {
                 $this->assertEquals('txt', $item['ext']);
                 $this->assertEquals('file', $item['type']);
-                $this->assertEquals(6, $item['mode']);                
+                $this->assertEquals(6, $item['mode']);
             }
-            
+
             $this->assertInt($item['accessed_on']);
             $this->assertInt($item['modified_on']);
             $this->assertInt($item['created_on']);
@@ -270,7 +270,7 @@ class FilesystemTest extends Test
 
     function testInfo()
     {
-        $fs = $this->getFilesystem();
+        $fs = $this->getFileSystem();
         $root_info = $fs->info('/');
 
         $this->assertEquals('.', $root_info['pathname']);
@@ -313,7 +313,7 @@ class FilesystemTest extends Test
 
     function testCreateDirRecusrsive()
     {
-        $fs = $this->getFilesystem();
+        $fs = $this->getFileSystem();
 
         $this->assertFalse($fs->createDir('abc/def/ghi/jkl/mno/pqrs/tuv/wxyz'));
         $this->assertTrue($fs->createDir('abc/def/ghi/jkl/mno/pqrs/tuv/wxyz', true));
@@ -326,7 +326,7 @@ class FilesystemTest extends Test
 
     function testListDirRecusrsive()
     {
-        $fs = $this->getFilesystem();
+        $fs = $this->getFileSystem();
 
         $l1 = $fs->listDir('/');
         $l2 = $fs->listDir('abc');
@@ -343,11 +343,11 @@ class FilesystemTest extends Test
 
     function testRemoveDirRecusrsive()
     {
-        $fs = $this->getFilesystem();
+        $fs = $this->getFileSystem();
         $fs->removeDir('abc');
-        
+
         $this->assertTrue($fs->hasDir('abc'));
-        
+
         $fs->createDir('abc/def');
         $fs->write('abc/def/file.text', 'a little deeper!');
         $fs->removeDir('abc', true);
@@ -356,7 +356,7 @@ class FilesystemTest extends Test
 
     function testRemoveRoot()
     {
-        $fs = $this->getFilesystem();
+        $fs = $this->getFileSystem();
 
         $this->assertTrue($fs->hasDir('/'));
         $c = count($fs->listDir('/', true));
@@ -387,6 +387,6 @@ class FilesystemTest extends Test
         # finally remove the temporary root
         $tmp_path = __DIR__ . '/tmp';
         rmdir($tmp_path);
-        $fs = new Filesystem($tmp_path);
+        $fs = new FileSystem($tmp_path);
     }
 }

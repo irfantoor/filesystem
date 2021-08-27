@@ -17,17 +17,13 @@ use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use Throwable;
 
-class Filesystem
+class FileSystem
 {
     const NAME        = "Irfan's Filesystem";
-    const DESCRIPTION = "A bare minimum filesystem to manipulate local directories and files";
-    const VERSION     = "0.3.1";
+    const DESCRIPTION = "Irfan's Filesystem : A single-file minimum filesystem class to manage the files and directories.";
+    const VERSION     = "0.4";
 
-    /**
-     * Root path
-     *
-     * @var string
-     */
+    /** @var string Root path */
     protected $root;
 
     /**
@@ -103,7 +99,7 @@ class Filesystem
      *
      * @param string relative path of file
      *
-     * @return mixed contents of the file or 
+     * @return mixed contents of the file or
      */
     function read($file)
     {
@@ -339,7 +335,7 @@ class Filesystem
             'created_on'  => $item->getCTime(),
             'size'        => $item->getSize(),
             'type'        => $item->getType(),
-            'mode'        => ($item->isReadable() ? 4 : 0) 
+            'mode'        => ($item->isReadable() ? 4 : 0)
                              + ($item->isWritable() ? 2 : 0)
                              + ($item->isExecutable() ? 1 : 0),
         ];
@@ -358,7 +354,7 @@ class Filesystem
         if ($this->_has($filename)) {
             $dir = dirname($filename);
             $it  = new DirectoryIterator($this->root . $dir);
-           
+
             if ($dir === '.') {
                 $dir = '';
             } else {
