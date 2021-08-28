@@ -1,380 +1,324 @@
 <?php
 
-/**
- * IrfanTOOR\Filesystem
- * php version 7.3
- *
- * @author    Irfan TOOR <email@irfantoor.com>
- * @copyright 2021 Irfan TOOR
- */
-
 namespace IrfanTOOR;
 
-use DirectoryIterator;
 use Exception;
 use FilesystemIterator;
-use RecursiveDirectoryIterator;
-use RecursiveIteratorIterator;
-use Throwable;
+use SplFileInfo;
 
 class FileSystem
 {
     const NAME        = "Irfan's Filesystem";
     const DESCRIPTION = "Irfan's Filesystem : A single-file minimum filesystem class to manage the files and directories.";
-    const VERSION     = "0.4";
+    const VERSION     = "0.5";
 
-    /** @var string Root path */
     protected $root;
 
     /**
-     * Constructs the Filesystem
+     * Filesystem constructor
      *
-     * @param string Root path
+     * @param string $root Root path of the FileSystem::class
      */
-    function __construct($root)
+    function __construct(string $root)
     {
-        $root = str_replace('../', '/', $root);
         $this->root = rtrim($root, '/') . '/';
 
-        if (!is_dir($this->root)) {
-            throw new Exception("root dir: {$this->root}, does not exist", 1);
-        }
+        if ($this->root === "/")
+            $this->root = "./";
+
+        if (!is_dir($this->root))
+            throw new Exception("dir: $this->root, does not exist");
     }
 
     /**
-     * Normalise the path
+     * Normalizes the path
      *
      * @param string path
-     *
-     * @return string path
+     * @return string
      */
-    function normalise($path)
+    function normalize($path): string
     {
-        # remove /../../ etc.
-        $path = str_replace('../', '/', $path);
+        $path =
+            rtrim(                                             # remove trailing  /+
+                ltrim(                                         # remove preceding /+
+                    preg_replace(
+                        '|\/\/+|Us',                           #  /+ => /
+                        '/',
+                        str_replace(['../', './'], '/', $path) # ../ or ./ => /
+                    ),                                         # order is important
+                    '/'
+                ),
+                '/'
+            )
+        ;
 
-        # remove ./
-        $path = str_replace('./', '/', $path);
-
-        # collapse ///... to /
-        $path = preg_replace('|\/\/+|Us', '/', $path);
-
-        # remove left / and right /
-        $path = ltrim($path, '/');
-        $path = rtrim($path, '/');
-
-        # remove the dot files
-        if ($path === '.' || $path === '..') {
-            $path = '';
-        }
-
-        return $path;
+        # like FilesystemIterator::SKIP_DOTS !
+        return
+            ($path === '.' || $path === '..')
+            ? ''
+            : $path
+        ;
     }
 
-    /**
-     * @param string relative path of file
-     *
-     * @return bool true if the filesystem has the file
-     */
-    private function _has($file)
+    protected function pathname(string $path): string
     {
-        return is_file($this->root . $file);
+        return
+            $this->root .
+            $this->normalize($path)
+        ;
     }
 
-    /**
-     * Verifies if the filesystem has the file
-     *
-     * @param string relative path of file
-     *
-     * @return bool true if the filesystem has the file
-     */
-    function has($file)
+    public function relativePath(string $pathname)
     {
-        $file = $this->normalise($file);
-        return $this->_has($file);
+        return
+            ltrim(
+                str_replace(
+                    $this->root,
+                    '',
+                    $this->normalize($pathname)
+                ),
+                '/'
+            )
+        ;
     }
 
-    /**
-     * Reads and returns the contnets of a file
-     *
-     * @param string relative path of file
-     *
-     * @return mixed contents of the file or
-     */
-    function read($file)
+    function dir($path): FilesystemIterator
     {
-        $file = $this->normalise($file);
-        return file_get_contents($this->root . $file);
+        $pathname = $this->pathname($path);
+
+        if (!is_dir($pathname))
+            throw new Exception("path: $path, not found");
+
+        return new FilesystemIterator($pathname , FilesystemIterator::SKIP_DOTS);
     }
 
-    /**
-     * Writes to a file
-     *
-     * @param string relative path of file
-     * @param string contents to write
-     * @param bool   force to write, even if a file already exists
-     *
-     * @return int size of the contents written to file
-     */
-    function write($file, $contents, $force = false)
+    function file(string $filename)
     {
-        $file = $this->normalise($file);
+        $pathname = $this->pathname($filename);
 
-        if (!$force && $this->_has($file)) {
-            throw new Exception("file: $file, already exists", 1);
-        }
-
-        return file_put_contents($this->root . $file, $contents);
+        return
+            file_exists($pathname)
+            ? new SplFileInfo($pathname)
+            : null
+        ;
     }
 
-    /**
-     * Rename a file
-     *
-     * @param string from
-     * @param string to
-     *
-     * @return bool true if the operation was successful, false otherwise
-     */
-    function rename($from, $to)
+    function isFile(string $filename)
     {
-        $from = $this->normalise($from);
-        $to = $this->normalise($to);
+        return is_file(
+            $this->pathname($filename)
+        );
+    }
 
-        if (!$this->_has($from)) {
+    function isDir(string $path)
+    {
+        return is_dir(
+            $this->pathname($path)
+        );
+    }
+
+    function has(string $filename)
+    {
+        return file_exists(
+            $this->pathname($filename)
+        );
+    }
+
+    function read(string $filename): string
+    {
+        $pathname = $this->pathname($filename);
+
+        if (!file_exists($pathname))
+            throw new Exception("file: $filename, not found");
+
+        return file_get_contents($pathname);
+    }
+
+    function write(string $filename, string $contents, bool $force = false): int
+    {
+        $pathname = $this->pathname($filename);
+
+        if (!$force && file_exists($pathname))
+            throw new Exception("file: $filename, already exists");
+
+        return file_put_contents($pathname, $contents);
+    }
+
+    function rename(string $from, string $to, bool $force = false): bool
+    {
+        $from_pathname = $this->pathname($from);
+        $to_pathname   = $this->pathname($to);
+
+        if (!is_file($from_pathname))
             throw new Exception("source: $from, does not exist", 1);
-        }
 
-        if (!$force && $this->_has($to)) {
+        if (!$force && is_file($to_pathname))
             throw new Exception("target: $to, already exists", 1);
-        }
 
-        return rename($this->root . $from, $this->root . $to);
+        return rename($from_pathname, $to_pathname);
     }
 
-    /**
-     * Copy a file
-     *
-     * @param string from
-     * @param string to
-     *
-     * @return bool true if the operation was successful, false otherwise
-     */
-    function copy($from, $to, $force = false)
+    function copy(string $from, string $to, bool $force = false): bool
     {
-        $from = $this->normalise($from);
-        $to = $this->normalise($to);
+        $from_pathname = $this->pathname($from);
+        $to_pathname   = $this->pathname($to);
 
-        if (!$this->_has($from)) {
+        if (!is_file($from_pathname))
             throw new Exception("source: $from, does not exist", 1);
-        }
 
-        if (!$force && $this->_has($to)) {
+        if (!$force && is_file($to_pathname))
             throw new Exception("target: $to, already exists", 1);
-        }
 
-        return copy($this->root . $from, $this->root . $to);
+        return copy($from_pathname, $to_pathname);
     }
 
-    /**
-     * Remove a file
-     *
-     * @param string relative path of file
-     *
-     * @return bool true if the operation was successful, false otherwise
-     */
-    function remove($file)
+    function remove(string $file): bool
     {
-        $file = $this->normalise($file);
-        return unlink($this->root . $file);
+        $pathname = $this->pathname($file);
+
+        if (!is_file($pathname))
+            throw new Exception("file: $file, does not exist", 1);
+
+        return unlink($pathname);
     }
 
-    /**
-     * @param string relative path of dir
-     *
-     * @return bool true if the dir exists, or false otherwise
-     */
-    private function _hasDir($dir)
-    {
-        return is_dir($this->root . $dir);
-    }
-
-    /**
-     * Verifies if the filesystem has the dir
-     *
-     * @param string relative path of dir
-     *
-     * @return bool true if the dir exists, or false otherwise
-     */
     function hasDir($dir)
     {
-        $dir = $this->normalise($dir);
-        return $this->_hasDir($dir);
+        return $this->isDir($dir);
     }
 
-    /**
-     * Creates a dir
-     *
-     * @param string relative path of dir
-     * @param bool   true if the missing directories in the path could be created
-     *
-     * @return bool true if the operation was successful, false otherwise
-     */
-    function createDir($dir, $recursive = false)
+    function ls(string $dir, bool $recursive = false): array
     {
-        $dir = $this->normalise($dir);
+        $list = [];
 
-        if (!$recursive) {
-            if ($dir && !is_dir($this->root . $dir)) {
-                return mkdir($this->root . $dir);
-            }
-
-            return false;
-        } else {
-            $d = explode('/', $dir);
-            $dd = '';
-            $sep = '';
-
-            while ($d) {
-                $dd  = $dd . $sep . array_shift($d);
-                $sep = '/';
-                $r   = $this->createDir($dd);
-            }
-
-            return $r;
-        }
-    }
-
-    /**
-     * Removes a dir
-     *
-     * @param string relative path of dir
-     * @param bool   true if the force to delete all files and subdirectories
-     *
-     * @return bool true if the operation was successful, false otherwise
-     */
-    function removeDir($dir, $force = false)
-    {
-        $dir = $this->normalise($dir);
-        $list = $this->listDir($dir, true);
-
-        if (!$force) {
-            if ($dir !== '') {
-                if (count($list) > 0)
-                    return false;
-
-                return rmdir($this->root . $dir);
-            }
-        } else {
-            foreach($list as $item) {
-                if ('file' === $item['type']) {
-                    $this->remove($item['pathname']);
-                } else {
-                    $this->removeDir($item['pathname']);
-                }
-            }
-
-            return $this->removeDir($dir);
-        }
-    }
-
-    /**
-     * List contents of a dir
-     *
-     * @param string relative path of dir
-     * @param bool   true to recursively list the subdirectories as well
-     *
-     * @return array of elements, where each element is an array representing a file or a dir etc.
-     */
-    function listDir($dir, $recursive = false)
-    {
-        $dir = $this->normalise($dir);
-
-        if ($this->_hasDir($dir)) {
-            $r   = [];
-
+        foreach ($this->dir($dir) as $item) {
             if ($recursive) {
-                $it = new RecursiveDirectoryIterator($this->root . $dir, FilesystemIterator::SKIP_DOTS);
-                $it = new RecursiveIteratorIterator($it, RecursiveIteratorIterator::CHILD_FIRST);
-
-                foreach ($it as $i) {
-                    $r[] = $this->_info($i);
+                if ($item->isFile()) {
+                    $list[] = $item->getFilename();
+                } elseif ($item->isDir()) {
+                    $d = $item->getFilename();
+                    $list[$d] = $this->ls($dir . "/" . $d, true);
+                    // [
+                        // 'pathname' => $this->relativePath($item->getPathname()),
+                        // 'list' => $this->ls($dir . "/" . $d, true)
+                    // ];
                 }
             } else {
-                $it = new DirectoryIterator($this->root . $dir);
-
-                foreach ($it as $i) {
-                    if ($i->isDot()) {
-                        continue;
-                    }
-
-                    $r[] = $this->_info($i);
-                }
+                // if ($item->isFile()) {
+                    $list[] = $item->getFilename();
+                // } elseif ($item->isDir()) {
+                    // $list[] = "" . $item->getFilename();
+                // }
             }
-
-            return $r;
         }
 
-        return false;
+        return $list;
     }
 
-    /**
-     * @param mixed
-     *
-     * @return array containing information of a file or a dir etc.
-     */
-    private function _info($item)
+    function mkdir(string $dir, bool $recursive = false)
     {
-        $pathname = str_replace($this->root, '', $item->getPathname());
-        $pathname = preg_replace('|^\.\/|Us', '', $pathname);
-        return [
-            'pathname'    => $pathname,
-            'basename'    => $item->getBasename(),
-            'ext'         => $item->getExtension(),
-            'accessed_on'    => $item->getATime(),
-            'modified_on' => $item->getMTime(),
-            'created_on'  => $item->getCTime(),
-            'size'        => $item->getSize(),
-            'type'        => $item->getType(),
-            'mode'        => ($item->isReadable() ? 4 : 0)
-                             + ($item->isWritable() ? 2 : 0)
-                             + ($item->isExecutable() ? 1 : 0),
-        ];
+        if ($recursive) {
+            $d = explode('/', $dir);
+            array_pop($d);
+            $base = implode('/', $d);
+
+            if (!$this->hasDir($base))
+                $this->mkdir($base, true);
+
+            return $this->mkdir($dir, false);
+        } else {
+            $pathname = $this->pathname($dir);
+
+            # {{{
+            # php: mkdir throws an uncatchable error
+            # so, testing if the base dir really exists.
+                $d = explode('/', $dir);
+                array_pop($d);
+                $base = implode('/', $d);
+
+                if ($base === "")
+                    $base = "/";
+                if (!$this->isDir($base))
+                    return false;
+            # }}}
+
+            try {
+                return is_dir($pathname) ? false : mkdir($pathname);
+            } catch(\Throwable $th) {
+                return false;
+            }
+        }
     }
 
-    /**
-     * Returns information regarding a file or a directory
-     *
-     * @param string filename or directory
-     *
-     * @return array containing information of a file or a dir etc.
-     */
-    function info($filename) {
-        $filename = $this->normalise($filename);
+    function rmdir(string $dir, bool $recursive = false)
+    {
+        if ($recursive) {
+            foreach ($this->dir($dir) as $item) {
+                $path = str_replace(
+                    $this->root,
+                    '',
+                    $item->getPathname()
+                );
 
-        if ($this->_has($filename)) {
-            $dir = dirname($filename);
-            $it  = new DirectoryIterator($this->root . $dir);
-
-            if ($dir === '.') {
-                $dir = '';
-            } else {
-                $dir .= '/';
+                if ($item->isFile())
+                    $this->remove($path);
+                else
+                    $this->rmdir($path, true);
             }
 
-            foreach ($it as $item) {
-                if ($item->isDot()) {
-                    continue;
-                }
+            $this->rmdir($dir, false);
+        } else {
+            $pathname = $this->pathname($dir);
 
-                if ($filename === $dir . $item->getBasename()) {
-                    return $this->_info($item);
-                }
+            # {{{
+            # php: rmdir throws an uncatchable error
+            # so, testing if the dir is really empty.
+            if(count($this->ls($dir)))
+                return false;
+            # }}}
+
+            try {
+                return
+                    ($this->root !== $pathname)
+                    ? rmdir( $pathname)
+                    : false
+                ;
+            } catch (\Throwable $th) {
+                return false;
             }
-        } elseif ($this->_hasDir($filename)) {
-            $it = new DirectoryIterator($this->root . $filename);
-            return $this->_info($it);
         }
+    }
 
-        return null;
+    function info(string $file)
+    {
+        $i = $this->file($file);
+
+        return
+            $i
+            ? [
+                'path'        => $i->getPath(),
+                'pathname'    => $i->getPathname(),
+
+                'basename'    => $i->getBasename(),
+                'filename'    => $i->getFilename(),
+                'extension'   => $i->getExtension(),
+
+                'created_on'  => $i->getCtime(),
+                'accessed_on' => $i->getAtime(),
+                'modified_on' => $i->getMtime(),
+
+                'group'       => $i->getGroup(),
+                'owner'       => $i->getOwner(),
+                'inode'       => $i->getINode(),
+
+                'perms'       => $i->getPerms(),
+                'size'        => $i->getSize(),
+                'type'        => $i->getType(),
+
+                'readable'    => $i->isReadable(),
+                'writable'    => $i->isWritable(),
+            ]
+            : []
+        ;
     }
 }

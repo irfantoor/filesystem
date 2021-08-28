@@ -53,7 +53,17 @@ class FileSystemTest extends Test
         $fs = $this->getFileSystem();
         $this->assertEquals('Hello World!', $fs->read('file.txt'));
         $this->assertFalse($fs->has('file1.txt'));
-        $this->assertFalse($fs->read('file1.txt'));
+
+    }
+
+    /**
+     * throws: Exception::class
+     * message: file: file1.txt, not found
+     */
+    function testReadException()
+    {
+        $fs = $this->getFileSystem();
+        $fs->read('file1.txt');
     }
 
     function testWrite()
@@ -179,7 +189,7 @@ class FileSystemTest extends Test
      * throws: Exception::class
      * message: source: file4.txt, does not exist
      */
-    function testCopyForceEception()
+    function testCopyForceException()
     {
         $fs = $this->getFileSystem();
         $fs->copy('file4.txt', 'file5.txt', true);
@@ -192,6 +202,15 @@ class FileSystemTest extends Test
         $this->assertTrue($fs->has('file.txt'));
         $this->assertTrue($fs->remove('file.txt'));
         $this->assertFalse($fs->has('file.txt'));
+    }
+
+    /**
+     * throws: Exception::class
+     * message: file: file.txt, does not exist
+     */
+    function testRemoveException()
+    {
+        $fs = $this->getFileSystem();
         $this->assertFalse($fs->remove('file.txt'));
     }
 
@@ -201,71 +220,96 @@ class FileSystemTest extends Test
         $this->assertFalse($fs->hasDir('abc'));
         $this->assertFalse($fs->hasDir('file1.txt'));
 
-        $fs->createDir('abc');
+        $fs->mkdir('abc');
         $this->assertTrue($fs->hasDir('abc'));
     }
 
-    function testCreateDir()
+    function testmkdir()
     {
         $fs = $this->getFileSystem();
 
-        $this->assertFalse($fs->createDir('abc'));
+        $this->assertFalse($fs->mkdir('abc'));
         $this->assertFalse($fs->hasDir('abc/def'));
-        $this->assertTrue($fs->createDir('abc/def'));
+        $this->assertTrue($fs->mkdir('abc/def', true));
         $this->assertTrue($fs->hasDir('abc/def'));
     }
 
-    function testRemoveDir()
+    function testrmdir()
     {
         $fs = $this->getFileSystem();
+        $this->assertTrue($fs->hasDir('abc/def'));
+        $this->assertFalse($fs->rmdir("abc"));
+        $this->assertTrue($fs->hasDir('abc/def'));
 
-        $this->assertTrue($fs->hasDir('abc/def'));
-        $this->assertFalse($fs->removeDir('abc'));
-        $this->assertTrue($fs->hasDir('abc/def'));
-        $this->assertTrue($fs->removeDir('abc/def'));
+        $this->assertTrue($fs->rmdir('abc/def'));
         $this->assertFalse($fs->hasDir('abc/def'));
-        $this->assertTrue($fs->removeDir('abc'));
+        $this->assertTrue($fs->rmdir('abc'));
         $this->assertFalse($fs->hasDir('abc'));
     }
 
-    function testListDir()
+    /**
+     * throws: Exception::class
+     * message: path: abc, not found
+     */
+    function testlsExceptionNoPath()
+    {
+        $fs = $this->getFileSystem();
+        $this->assertFalse($fs->ls('abc'));
+    }
+
+    function testls()
     {
         $fs = $this->getFileSystem();
 
-        $this->assertFalse($fs->listDir('abc'));
-        $fs->createDir('abc');
-        $this->assertArray($fs->listDir('abc'));
+        $fs->mkdir('abc');
+        $this->assertArray($fs->ls('abc'));
         $fs->write('abc/file.txt', 'Hello World! from abc');
 
-        foreach ($fs->listDir('.') as $item) {
-            $this->assertEquals($item['basename'], $item['pathname']);
+        # /abc
+        $info = $fs->info('/abc');
+        $this->assertEquals(
+            $info['pathname'],
+            $info['path'] . '/' . $info['basename']
+        );
 
-            if ($item['basename'] == 'abc') {
-                $this->assertEquals('', $item['ext']);
-                $this->assertEquals('dir', $item['type']);
-                $this->assertEquals(7, $item['mode']);
-            } else {
-                $this->assertEquals('txt', $item['ext']);
-                $this->assertEquals('file', $item['type']);
-                $this->assertEquals(6, $item['mode']);
-            }
+        $this->assertEquals('', $info['extension']);
 
-            $this->assertInt($item['accessed_on']);
-            $this->assertInt($item['modified_on']);
-            $this->assertInt($item['created_on']);
-            $this->assertInt($item['size']);
-        }
+        $this->assertInt($info['accessed_on']);
+        $this->assertInt($info['modified_on']);
+        $this->assertInt($info['created_on']);
 
-        foreach ($fs->listDir('abc') as $item) {
-            $this->assertEquals('abc/' . $item['basename'], $item['pathname']);
-            $this->assertEquals('txt', $item['ext']);
-            $this->assertInt($item['accessed_on']);
-            $this->assertInt($item['modified_on']);
-            $this->assertInt($item['created_on']);
-            $this->assertInt($item['size']);
-            $this->assertEquals('file', $item['type']);
-            $this->assertEquals(6, $item['mode']);
-        }
+        $this->assertInt($info['inode']);
+        $this->assertInt($info['perms']);
+        $this->assertInt($info['group']);
+        $this->assertInt($info['owner']);
+        $this->assertInt($info['size']);
+
+        $this->assertString($info['type']);
+        $this->assertEquals('dir', $info['type']);
+
+        $this->assertBool($info['readable']);
+        $this->assertBool($info['writable']);
+
+        # abc/file.txt
+        $info = $fs->info('/abc/file.txt');
+        $this->assertEquals('file.txt', $info['basename']);
+        $this->assertEquals('txt', $info['extension']);
+
+        $this->assertInt($info['accessed_on']);
+        $this->assertInt($info['modified_on']);
+        $this->assertInt($info['created_on']);
+
+        $this->assertInt($info['inode']);
+        $this->assertInt($info['perms']);
+        $this->assertInt($info['group']);
+        $this->assertInt($info['owner']);
+        $this->assertInt($info['size']);
+
+        $this->assertString($info['type']);
+        $this->assertEquals('file', $info['type']);
+
+        $this->assertBool($info['readable']);
+        $this->assertBool($info['writable']);
     }
 
     function testInfo()
@@ -273,8 +317,7 @@ class FileSystemTest extends Test
         $fs = $this->getFileSystem();
         $root_info = $fs->info('/');
 
-        $this->assertEquals('.', $root_info['pathname']);
-        $this->assertEquals('.', $root_info['basename']);
+        $this->assertEquals('tmp', $root_info['basename']);
         $this->assertEquals($root_info, $fs->info(''));
         $this->assertEquals($root_info, $fs->info('.'));
         $this->assertEquals($root_info, $fs->info('..'));
@@ -283,74 +326,66 @@ class FileSystemTest extends Test
         $this->assertEquals($root_info, $fs->info('../../../..'));
 
         $root_info = $fs->info('/abc');
-
-        $this->assertEquals('abc/.', $root_info['pathname']);
-        $this->assertEquals('.', $root_info['basename']);
+        $this->assertEquals('abc', $root_info['basename']);
         $this->assertEquals($root_info, $fs->info('abc'));
         $this->assertEquals($root_info, $fs->info('abc/'));
         $this->assertEquals($root_info, $fs->info('/abc'));
         $this->assertEquals($root_info, $fs->info('/abc/'));
         $this->assertEquals($root_info, $fs->info('/abc/../../../'));
 
-        $fs->createDir('etc');
-        $this->assertEmpty($fs->listDir('/etc/'));
+        $fs->mkdir('etc');
+        $this->assertEmpty($fs->ls('/etc/'));
 
-        $fs->removeDir('etc');
-        $this->assertFalse($fs->listDir('/etc/'));
+        $fs->rmdir('etc');
+        // todo -- $this->assertFalse($fs->ls('/etc/'));
 
         $file_info = $fs->info('file1.txt');
 
-        $this->assertEquals('file1.txt', $file_info['pathname']);
         $this->assertEquals('file1.txt', $file_info['basename']);
-        $this->assertEquals('txt', $file_info['ext']);
-        $this->assertNotNull($file_info['accessed_on']);
-        $this->assertNotNull($file_info['modified_on']);
-        $this->assertNotNull($file_info['created_on']);
+        $this->assertEquals('txt', $file_info['extension']);
+        $this->assertInt($file_info['accessed_on']);
+        $this->assertInt($file_info['modified_on']);
+        $this->assertInt($file_info['created_on']);
         $this->assertInt($file_info['size']);
         $this->assertEquals('file', $file_info['type']);
-        $this->assertEquals(6, $file_info['mode']);
     }
 
-    function testCreateDirRecusrsive()
+    function testmkdirRecusrsive()
     {
         $fs = $this->getFileSystem();
 
-        $this->assertFalse($fs->createDir('abc/def/ghi/jkl/mno/pqrs/tuv/wxyz'));
-        $this->assertTrue($fs->createDir('abc/def/ghi/jkl/mno/pqrs/tuv/wxyz', true));
-        $this->assertTrue($fs->createDir('wxyz', true));
-        $this->assertFalse($fs->createDir('wxyz', true));
+        $this->assertFalse($fs->mkdir('abc/def/ghi/jkl/mno/pqrs/tuv/wxyz'));
+        $this->assertTrue($fs->mkdir('abc/def/ghi/jkl/mno/pqrs/tuv/wxyz', true));
+        $this->assertTrue($fs->mkdir('wxyz', true));
+        $this->assertFalse($fs->mkdir('wxyz', true));
 
-        $fs->removeDir('abc/def/ghi', true);
-        $fs->removeDir('wxyz', true);
+        $fs->rmdir('abc/def/ghi', true);
+        $fs->rmdir('wxyz', true);
     }
 
-    function testListDirRecusrsive()
+    function testlsRecusrsive()
     {
         $fs = $this->getFileSystem();
 
-        $l1 = $fs->listDir('/');
-        $l2 = $fs->listDir('abc');
-        $list = $fs->listDir('/', true);
-
+        $l1 = $fs->ls('/');
+        $l2 = $fs->ls('abc');
+        $list = $fs->ls('/', true);
         $this->assertNotZero($l1);
         $this->assertNotZero($l2);
-        $this->assertEquals(count($l1) + count($l2), count($list));
-
-        $l = array_merge($l1, $l2);
-        $ll = sort($l);
-        $this->assertEquals($ll, sort($list));
+        $this->assertEquals(count($l1), count($list));
+        $this->assertEquals(count($l2), count($list['abc']));
     }
 
-    function testRemoveDirRecusrsive()
+    function testrmdirRecusrsive()
     {
         $fs = $this->getFileSystem();
-        $fs->removeDir('abc');
-
+        $fs->rmdir('abc');
         $this->assertTrue($fs->hasDir('abc'));
 
-        $fs->createDir('abc/def');
+        $fs->mkdir('abc/def');
         $fs->write('abc/def/file.text', 'a little deeper!');
-        $fs->removeDir('abc', true);
+        $fs->has('abc/def/file.text');
+        $fs->rmdir('abc', true);
         $this->assertFalse($fs->hasDir('abc'));
     }
 
@@ -359,23 +394,24 @@ class FileSystemTest extends Test
         $fs = $this->getFileSystem();
 
         $this->assertTrue($fs->hasDir('/'));
-        $c = count($fs->listDir('/', true));
+        $c = count($fs->ls('/', true));
         $this->assertTrue($c > 1);
 
-        # can not remove the root dir
-        $fs->removeDir('/');
+        # root is not empty
+        $fs->rmdir('/');
         $this->assertTrue($fs->hasDir('/'));
-        $c = count($fs->listDir('/', true));
+        $c = count($fs->ls('/', true));
         $this->assertTrue($c > 1);
 
-        $fs->removeDir('/', true);
-        $c = $fs->listDir('/', true);
+        # all items are removed
+        $fs->rmdir('/', true);
+        $c = $fs->ls('/', true);
         $this->assertArray($c);
         $this->assertEmpty($c);
 
-        $fs->removeDir('../', true);
-        $fs->removeDir('..', true);
-        $fs->removeDir('./../', true);
+        $fs->rmdir('../', true);
+        $fs->rmdir('..', true);
+        $fs->rmdir('./../', true);
         $this->assertTrue($fs->hasDir('/'));
     }
 

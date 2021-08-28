@@ -21,7 +21,8 @@
     },
     "autoload": {
         "psr-4": {
-            "IrfanTOOR\\": "src"
+            "IrfanTOOR\\": "src",
+            "IrfanTOOR\\FileSystem\\": "src"
         }
     }
 }
