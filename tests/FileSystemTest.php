@@ -39,6 +39,42 @@ class FileSystemTest extends Test
         $this->assertEquals($fs::VERSION, FileSystem::VERSION);
     }
 
+    function testNormalize()
+    {
+        $this->assertTodo("verify if it normalizes against all the cases");
+        $this->assertTodo("code to avoid injection senarios");
+    }
+
+    function testPathname()
+    {
+        $this->assertTodo("Tests to verify the relitive path to absolute pathname");
+    }
+
+    function testPath()
+    {
+        $this->assertTodo("Tests to verify the absolute pathname to relitive path");
+    }
+
+    function testDir()
+    {
+        $this->assertTodo("verifies if a valid FileSystemIterator is returned");
+    }
+
+    function testFile()
+    {
+        $this->assertTodo("verifies if a valid SplFileInfo is returned");
+    }
+
+    function testIsFile()
+    {
+        $this->assertTodo("verifies if a given path is a file");
+    }
+
+    function testIsDir()
+    {
+        $this->assertTodo("verifies if a given path is a dir");
+    }
+
     function testHas()
     {
         $fs = $this->getFileSystem();
