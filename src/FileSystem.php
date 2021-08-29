@@ -34,6 +34,7 @@ class FileSystem
      * Normalizes the path
      *
      * @param string path
+     *
      * @return string
      */
     function normalize($path): string
@@ -60,6 +61,13 @@ class FileSystem
         ;
     }
 
+    /**
+     * Returns the absolute pathname of the provided relative path
+     *
+     * @param string $path Relative path of a file or a dir
+     *
+     * @return string
+     */
     protected function pathname(string $path): string
     {
         return
@@ -68,7 +76,16 @@ class FileSystem
         ;
     }
 
-    public function relativePath(string $pathname)
+    /**
+     * Retuens the relative path of an absolute provided path
+     * Note: it considers that the absolute path is under the current root of
+     * FileSystem
+     *
+     * @param string $pathname Absolute pathname of a file or a directory
+     *
+     * @return string
+     */
+    public function relativePath(string $pathname): string
     {
         return
             ltrim(
@@ -82,19 +99,33 @@ class FileSystem
         ;
     }
 
-    function dir($path): FilesystemIterator
+    /**
+     * Returns FileSystemIterator of a given relative path
+     *
+     * @param string $dir Relative path of the directory
+     *
+     * @return FilesystemIterator
+     */
+    function dir($dir): FilesystemIterator
     {
-        $pathname = $this->pathname($path);
+        $pathname = $this->pathname($dir);
 
         if (!is_dir($pathname))
-            throw new Exception("path: $path, not found");
+            throw new Exception("path: $dir, not found");
 
         return new FilesystemIterator($pathname , FilesystemIterator::SKIP_DOTS);
     }
 
-    function file(string $filename)
+    /**
+     * Returns SplFileInfo Object of the given file/dir
+     *
+     * @param string $path Relative path of a file or a directory
+     *
+     * @return SplFileInfo|null
+     */
+    function file(string $path): ?SplFileInfo
     {
-        $pathname = $this->pathname($filename);
+        $pathname = $this->pathname($path);
 
         return
             file_exists($pathname)
@@ -103,119 +134,223 @@ class FileSystem
         ;
     }
 
-    function isFile(string $filename)
+    /**
+     * Verifies if the given path is a file
+     *
+     * @param $path Relative path of a file or a directory
+     *
+     * @return bool True if the provided path is a file, false otherwise
+     */
+    function isFile(string $path): bool
     {
         return is_file(
-            $this->pathname($filename)
+            $this->pathname($path)
         );
     }
 
-    function isDir(string $path)
+    /**
+     * Verifies if the given path is a directory
+     *
+     * @param $path Relative path of a file or a directory
+     *
+     * @return bool True if the provided path is a directory, false otherwise
+     */
+    function isDir(string $path): bool
     {
         return is_dir(
             $this->pathname($path)
         );
     }
 
-    function has(string $filename)
+    /**
+     * Verifies if the given relative path is present in the FileSystem
+     *
+     * @param $file Relative path of a file
+     *
+     * @return bool True if the file exists and is a file, false otherwise
+     */
+    function has(string $file): bool
     {
-        return file_exists(
-            $this->pathname($filename)
+        return is_file(
+            $this->pathname($file)
         );
     }
 
-    function read(string $filename): string
+    /**
+     * Reads and returns the contents of the file
+     *
+     * @param string $file Relative path of a file
+     *
+     * @return string Contents of the file
+     */
+    function read(string $file): string
     {
-        $pathname = $this->pathname($filename);
+        $pathname = $this->pathname($file);
 
         if (!file_exists($pathname))
-            throw new Exception("file: $filename, not found");
+            throw new Exception("file: $file, not found");
 
         return file_get_contents($pathname);
     }
 
-    function write(string $filename, string $contents, bool $force = false): int
+    /**
+     * Writes text to a file
+     *
+     * @param string $file     Relative path of a file
+     * @param string $contents Contents to write to the file
+     * @param bool   $force    Force writing even if the file already exists
+     *
+     * @return int Number of bytes written
+     */
+    function write(string $file, string $contents, bool $force = false): int
     {
-        $pathname = $this->pathname($filename);
+        $pathname = $this->pathname($file);
 
         if (!$force && file_exists($pathname))
-            throw new Exception("file: $filename, already exists");
+            throw new Exception("file: $file, already exists");
 
         return file_put_contents($pathname, $contents);
     }
 
+    /**
+     * Renames or moves a file from one location to another
+     *
+     * @param string $from  Relative path of the file to rename
+     * @param string $to    New relative location and name
+     * @param bool   $force Force the renaming operation, even if the target exists
+     *
+     * @return bool True if successful, false otherwise
+     */
     function rename(string $from, string $to, bool $force = false): bool
     {
         $from_pathname = $this->pathname($from);
-        $to_pathname   = $this->pathname($to);
-
         if (!is_file($from_pathname))
             throw new Exception("source: $from, does not exist", 1);
 
+        $to_pathname   = $this->pathname($to);
         if (!$force && is_file($to_pathname))
             throw new Exception("target: $to, already exists", 1);
 
         return rename($from_pathname, $to_pathname);
     }
 
+    /**
+     * Copies a file from one location to another
+     *
+     * @param string $from  Relative path of the source file
+     * @param string $to    New relative location of the target
+     * @param bool   $force Force the renaming operation, even if the target exists
+     *
+     * @return bool True if successful, false otherwise
+     */
     function copy(string $from, string $to, bool $force = false): bool
     {
         $from_pathname = $this->pathname($from);
-        $to_pathname   = $this->pathname($to);
-
         if (!is_file($from_pathname))
             throw new Exception("source: $from, does not exist", 1);
 
+        $to_pathname   = $this->pathname($to);
         if (!$force && is_file($to_pathname))
             throw new Exception("target: $to, already exists", 1);
 
         return copy($from_pathname, $to_pathname);
     }
 
+    /**
+     * Removes a file
+     *
+     * @param string $file Relative path of the file to remove
+     *
+     * @return bool True if successful, false otherwise
+     */
     function remove(string $file): bool
     {
         $pathname = $this->pathname($file);
 
         if (!is_file($pathname))
-            throw new Exception("file: $file, does not exist", 1);
+            throw new Exception("file: $file, does not exist");
 
         return unlink($pathname);
     }
 
-    function hasDir($dir)
+    /**
+     * Verifies if the FileSystem has a directory
+     * Note its an alias to isDir
+     *
+     * @param string $dir Relative path of the directory
+     *
+     * @return bool True if the path exists and is a directory, false otherwise
+     */
+    function hasDir($dir): bool
     {
         return $this->isDir($dir);
     }
 
+    /**
+     * Retuens the directory list of a path
+     * e.g.
+     * dd( $list = $fs->ls('/', true) );
+     * will print something like :
+     * Array (
+     *      '0' => 'file1.txt',
+     *      '1' => 'file2.txt',
+     *      'subdir' => Array (
+     *          '0' => 'Somefile',
+     *          'AnotherSubDirectory' => Array (
+     *              ...
+     *          )
+     *          ...
+     *      )
+     *      '2' => 'file3.txt,
+     *      'subdir' => Array (),
+     * )
+     *
+     * dd( $list = $fs->ls('/') );
+     * will print something like :
+     * Array (
+     *      '0' => 'file1.txt',
+     *      '1' => 'file2.txt',
+     *      'subdir' => Array (),
+     *      '2' => 'file3.txt,
+     *      'subdir' => Array (),
+     * )
+     * Note: The empty array for 'subdir' in a non recursive call, even if it has
+     * files or
+
+     * @param string $dir       Relative path of the directory
+     * @param bool   $recursive Make it true to scan the subdirectories recursively
+     *
+     * @return array List of the files or directories present in the given path
+     */
     function ls(string $dir, bool $recursive = false): array
     {
         $list = [];
 
         foreach ($this->dir($dir) as $item) {
-            if ($recursive) {
-                if ($item->isFile()) {
-                    $list[] = $item->getFilename();
-                } elseif ($item->isDir()) {
-                    $d = $item->getFilename();
-                    $list[$d] = $this->ls($dir . "/" . $d, true);
-                    // [
-                        // 'pathname' => $this->relativePath($item->getPathname()),
-                        // 'list' => $this->ls($dir . "/" . $d, true)
-                    // ];
-                }
-            } else {
-                // if ($item->isFile()) {
-                    $list[] = $item->getFilename();
-                // } elseif ($item->isDir()) {
-                    // $list[] = "" . $item->getFilename();
-                // }
-            }
+            $name = $item->getFilename();
+
+            if ($item->isDir())
+                $list[$name] = $recursive
+                    ? $this->ls($dir . "/" . $name, true)
+                    : []
+                ;
+            else
+                $list[] = $name;
         }
 
         return $list;
     }
 
-    function mkdir(string $dir, bool $recursive = false)
+    /**
+     * Make a directory in the FileSystem
+     *
+     * @param string $dir       Relative path of the directory to make
+     * @param bool   $recursive If the non existing base directories must also be
+     *                          created recursively
+     *
+     * @return bool True if successful, false otherwise
+     */
+    function mkdir(string $dir, bool $recursive = false): bool
     {
         if ($recursive) {
             $d = explode('/', $dir);
@@ -250,7 +385,16 @@ class FileSystem
         }
     }
 
-    function rmdir(string $dir, bool $recursive = false)
+    /**
+     * Removes an empty directory or remove all the contents recursively first
+     *
+     * @param string $dir       Relative path of the directory to remove
+     * @param bool   $recursive True if remove the contents recursively, i.e. even
+     *                          from any sub directories present.
+     *
+     * @return bool True if successful, false otherwise
+     */
+    function rmdir(string $dir, bool $recursive = false): bool
     {
         if ($recursive) {
             foreach ($this->dir($dir) as $item) {
@@ -266,7 +410,7 @@ class FileSystem
                     $this->rmdir($path, true);
             }
 
-            $this->rmdir($dir, false);
+            return $this->rmdir($dir, false);
         } else {
             $pathname = $this->pathname($dir);
 
@@ -289,9 +433,17 @@ class FileSystem
         }
     }
 
-    function info(string $file)
+    /**
+     * Returns FileSystem information regarding a file or a directory
+     *
+     * @param $path Relative path of a file or a directory
+     *
+     * @return array Array containing the FileSystem information of the object
+     *               or an empty array otherwise
+     */
+    function info(string $path): array
     {
-        $i = $this->file($file);
+        $i = $this->file($path);
 
         return
             $i

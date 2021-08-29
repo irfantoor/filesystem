@@ -310,6 +310,38 @@ class FileSystemTest extends Test
 
         $this->assertBool($info['readable']);
         $this->assertBool($info['writable']);
+
+        # simple ls
+        # e.g. $list = [
+        #    '0' => 'file.txt',
+        #    'dir' => []
+        # ];
+        $list = $fs->ls('/');
+        foreach ($fs->dir('/') as $item) {
+            if ($item->isDir())
+                $this->assertTrue(array_key_exists($item->getFilename(), $list));
+            else
+                $this->assertTrue(in_array($item->getFilename(), $list));
+        }
+
+        # recursive ls
+        # e.g. $list = [
+        #    '0' => 'file.txt',
+        #    'dir' => [
+        #        '0' => 'anotherfile.txt',
+        #        'anotherdir' => [
+        #           ...
+        #        ],
+        #        ...
+        #    ],
+        #];
+        $list = $fs->ls('/', true);
+        foreach ($fs->dir('/') as $item) {
+            if ($item->isDir())
+                $this->assertTrue(array_key_exists($item->getFilename(), $list));
+            else
+                $this->assertTrue(in_array($item->getFilename(), $list));
+        }
     }
 
     function testInfo()
