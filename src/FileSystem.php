@@ -77,15 +77,16 @@ class FileSystem
     }
 
     /**
-     * Retuens the relative path of an absolute provided path
+     * Returns the relative path of an absolute provided pathname
      * Note: it considers that the absolute path is under the current root of
      * FileSystem
      *
      * @param string $pathname Absolute pathname of a file or a directory
      *
-     * @return string
+     * @return string returns the relative path, by removeing the root path of
+     *                FileSystem from the pathname
      */
-    public function relativePath(string $pathname): string
+    public function path(string $pathname): string
     {
         return
             ltrim(
