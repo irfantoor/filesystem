@@ -214,6 +214,25 @@ class FileSystem
     }
 
     /**
+     * Appends text to a file
+     *
+     * @param string $file     Relative path of a file
+     * @param string $contents Contents to be appended to the file
+     * @param bool   $create   Create the file if it does not exist
+     *
+     * @return int Number of bytes written
+     */
+    function append(string $file, string $contents, bool $create = false): int
+    {
+        $pathname = $this->pathname($file);
+
+        if (!$create && !file_exists($pathname))
+            throw new Exception("file: $file, does not exist");
+
+        return file_put_contents($pathname, $contents, FILE_APPEND);
+    }
+
+    /**
      * Renames or moves a file from one location to another
      *
      * @param string $from  Relative path of the file to rename

@@ -105,7 +105,7 @@ class FileSystemTest extends Test
     function testWrite()
     {
         $fs = $this->getFileSystem();
-
+        $this->assertFalse($fs->has('file1.txt'));
         $this->assertNotZero($fs->write('file1.txt', 'something'));
         $this->assertEquals('something', $fs->read('file1.txt'));
         $this->assertNotZero($fs->write('file1.txt', 'something else', true));
@@ -119,7 +119,25 @@ class FileSystemTest extends Test
     function testWriteException()
     {
         $fs = $this->getFileSystem();
-        $fs->write('file.txt', 'something else');
+        $fs->write('file.txt', 'something');
+    }
+
+    function testAppend()
+    {
+        $fs = $this->getFileSystem();
+        $this->assertNotZero($fs->append('file1.txt', ' appended'));
+        $this->assertEquals('something else appended', $fs->read('file1.txt'));
+        $fs->append('file100.txt', 'try appending to a non existant file', true);
+    }
+
+    /**
+     * throws: Exception::class
+     * message: file: file99.txt, does not exist
+     */
+    function testAppendException()
+    {
+        $fs = $this->getFileSystem();
+        $fs->append('file99.txt', 'try appending to a non existant file');
     }
 
     function testRename()
