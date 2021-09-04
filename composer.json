@@ -6,7 +6,7 @@
         "create", "copy", "rename", "remove", "single-file"
     ],
     "type": "library",
-    "license": "MIT",
+    "license": "AGPL-3.0-or-later",
     "authors": [
         {
             "name": "Irfan TOOR",
