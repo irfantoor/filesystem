@@ -43,6 +43,7 @@ $contents = $fs->read('file.txt');
 # Writes to a file
 # write($file, $contents, $force = false)
 $fs->write('file1.txt', 'Hello World!'); // writes to file if it does not exists
+$fs->write('file1.txt', 'Something'); // throws an Exception, as the file already exists
 $fs->write('file1.txt', 'Hello World!', true); // forces to write to file, even if it exists
 
 # Rename a file
@@ -50,12 +51,15 @@ $fs->rename('hello.txt', 'world.txt'); // returns true if the operation was succ
 
 # Copy a file
 # format: $fs->copy($from, $to, $force = false)
+$fs->copy('somefile', 'another_file'); // throws an Exception, if the source does not exists
 $fs->copy('somefile', 'another_file'); // copies to the target provided target doest not exist
+$fs->copy('somefile', 'another_file'); // throws an Exception, if the target exists
 $fs->copy('somefile', 'another_file', true); // copies to the target even if the target exists
 
 # Remove a file
 # format: $fs->remove($file)
-$fs->remove('another_file');
+$fs->remove('another_file'); // removes the file, if it exists
+$fs->remove('another_file'); // throws an Exception if the file does not exist
 ```
 
 ## Directories
@@ -68,67 +72,81 @@ $fs = new IrfanTOOR\Filesystem('My/Base/Path');
 # Verifies if the filesystem has the dir
 # format: $fs->hasDir($dir)
 if ($fs->hasDir('abc')) { // verifies if the directory : My/Base/Path/abc exists
-    # ... 
+    # ...
 }
 
-# Creates a dir
-# format: $fs->createDir($dir, $recursive = false)
-$fs->createDir('def'); // creates directory : My/Base/Path/def
-$fs->createDir('ghi/jkl'); // returns false if directory My/Base/Path/ghi does not exist
-$fs->createDir('ghi/jkl/mno', true); // tries to create all of the missing directories in the path
+# Creates a directory in the FileSystem
+# format: mkdir(string $dir, bool $recursive = false): bool
+$fs->mkdir('def'); // creates directory : My/Base/Path/def
+$fs->mkdir('ghi/jkl'); // returns false if directory My/Base/Path/ghi does not exist
+$fs->mkdir('ghi/jkl/mno', true); // Creates all of the missing directories in the path
 
 # Removes a dir
-# format: $fs->removeDir($dir, $force = false)
-$fs->removeDir('abc'); // removes the relative dir, if its empty
-$fs->removeDir('ghi'); // fails if it contains files or sub-directory
-$fs->removeDir('ghi', true); // forces to remove all of the files and sub-folders
-$fs->removeDir('/', true); // this operation will delete every thing except removing the rootpath
+# format: rmdir(string $dir, bool $recursive = false): bool
+$fs->rmdir('abc'); // removes the relative dir, if its empty
+$fs->rmdir('ghi'); // fails if it contains files or sub-directory
+$fs->rmdir('ghi', true); // forces to remove all of the files and sub-folders
+$fs->rmdir('/', true); // this operation will delete every thing except removing the rootpath
 
-
-# List contents of a dir
-# format: $fs->listDir($dir, $recursive = false)
-$list = $fs->listDir('abc'); // retuens the list of the entries of abc as an array
-$list = $fs->listDir('ghi'); // retuens the list of the entries of ghi
-$list = $fs->listDir('ghi', true); // retuens the list of the entries of ghi and all the sub-directories
+# Returns the contents of a directory as an array
+# format: ls(string $dir, bool $recursive = false): array
+$list = $fs->ls('abc'); // retuens the list of the entries of abc as an array
+$list = $fs->ls('ghi'); // retuens the list of the entries of ghi
+$list = $fs->ls('ghi', true); // retuens the list of the entries of ghi and all the sub-directories
 ```
 
 ## Common
 
-to retreive the information regarding an element, be it a directory or a file, function info can be used.
+The functions which can be used for both files and directories.
 
 ```php
 # ...
 
-# Returns information regarding a file or a directory
+# Returns FileSystem information regarding a file or a directory
 # format: $fs->info($filename)
 print_r($fs->info('abc'));
 /*
 Array
 (
-    [pathname] => abc/.
-    [basename] => .
-    [ext] => 
-    [accessed_on] => 1554135875
-    [modified_on] => 1554135524
-    [created_on] => 1554135524
+    [path] => "\/Users\/dev\/hosts\/github\/irfantoor\/filesystem"
+    [pathname] => "\/Users\/dev\/hosts\/github\/irfantoor\/filesystem\/tests"
+    [basename] => "tests"
+    [filename] => "tests"
+    [extension] => ""
+    [created_on] => 1630761810
+    [accessed_on] => 1630761811
+    [modified_on] => 1630761810
+    [group] => 20
+    [owner] => 502
+    [inode] => 526945
+    [perms] => 16877
     [size] => 96
-    [type] => dir
-    [mode] => 7
+    [type] => "dir"
+    [readable] => true
+    [writable] => true
 )
 */
-print_r($fs->info('file1.txt'));
+
+print_r($fs->info('tests/FileSystemTest.php'));
 /*
 Array
 (
-    [pathname] => file.txt
-    [basename] => file.txt
-    [ext] => txt
-    [accessed_on] => 1554135822
-    [modified_on] => 1554134609
-    [created_on] => 1554134609
-    [size] => 11
-    [type] => file
-    [mode] => 6
+    [path] => "\/Users\/dev\/hosts\/github\/irfantoor\/filesystem\/tests"
+    [pathname] => "\/Users\/dev\/hosts\/github\/irfantoor\/filesystem\/tests\/FileSystemTest.php"
+    [basename] => "FileSystemTest.php"
+    [filename] => "FileSystemTest.php"
+    [extension] => "php"
+    [created_on] => 1630515548
+    [accessed_on] => 1630761810
+    [modified_on] => 1630515548
+    [group] => 20
+    [owner] => 502
+    [inode] => 2370274
+    [perms] => 33188
+    [size] => 14593
+    [type] => "file"
+    [readable] => true
+    [writable] => true
 )
 */
 ```
@@ -136,8 +154,8 @@ Array
 ## About
 
 **Requirements**
-Irfan's Filesystem works with PHP 7.1 or above.
+Irfan's Filesystem works with PHP 7.3 or above.
 
 **License**
 
-Irfan's Filesystem is licensed under the MIT License - see the `LICENSE` file for details
+Irfan's Filesystem is licensed under the GPL v3.0 License - see the `LICENSE` file for details

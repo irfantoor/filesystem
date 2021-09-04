@@ -307,7 +307,7 @@ class FileSystem
     }
 
     /**
-     * Retuens the directory list of a path
+     * Returns the contents of a directory as an array
      * e.g.
      * dd( $list = $fs->ls('/', true) );
      * will print something like :
@@ -362,7 +362,7 @@ class FileSystem
     }
 
     /**
-     * Make a directory in the FileSystem
+     * Makes a directory in the FileSystem
      *
      * @param string $dir       Relative path of the directory to make
      * @param bool   $recursive If the non existing base directories must also be
